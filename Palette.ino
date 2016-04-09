@@ -1,14 +1,24 @@
 #include "Adafruit_NeoPixel.h"
 #define DI 6
 #define LED 13
-#define BUTTON 9
+#define BUTTON 3
 #define ADA 8
+#define C 4
+#define M 5
+#define Y 6
+#define K 7
+
+
+const unsigned long base = 3000;
 
 String come = "";
 String data = "";
 int rgb[3] = {0,0,0};
+int cmyk[4] = {0,0,0,0};
 
 int state;//状态机
+
+const int motor[4] = {4,5,6,7};
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(25, ADA, NEO_GRB + NEO_KHZ800);
 
@@ -18,8 +28,29 @@ void setup()
   while (!Serial1) ;
   come = "";
   state = 0;
-  pixels.begin(); // This initializes the NeoPixel library.
+  //pixels.begin(); // This initializes the NeoPixel library.
+  
+//  pinMode(C, OUTPUT);
+//  pinMode(M, OUTPUT);
+//  pinMode(Y, OUTPUT);
+//  pinMode(K, OUTPUT);
+//   
+//  digitalWrite(C, LOW);
+//  digitalWrite(M, LOW);
+//  digitalWrite(Y, LOW);
+//  digitalWrite(K, LOW);
+
+  for(int i = 0 ;i < 4 ;i++) {
+    pinMode(motor[i], OUTPUT);
+    digitalWrite(motor[i], LOW);
+  }
+
+  //interrupt
+  attachInterrupt(digitalPinToInterrupt(BUTTON), print_ISR, RISING);
+  
 }
+
+
 
 void divide() {
   int count = 0 ;
@@ -38,7 +69,6 @@ void divide() {
   }
   
   rgb[count] =  tmp.toInt();
-  //Serial.print(tmp.toInt());
   for(int i = 0 ; i < 3 ;i++)
   {
     Serial.println(rgb[i]);
@@ -60,9 +90,51 @@ void show() {
   }
 }
 
+void translate() {
+    int r = (rgb[0]*100)/255;
+    int g = (rgb[1]*100)/255;
+    int b = (rgb[2]*100)/255;
+    int _max = max(max(r,g),b);
+    cmyk[3] = 100 -_max;
+    cmyk[0] = (_max-r)*100/_max;
+    cmyk[1] = (_max-g)*100/_max;
+    cmyk[2] = (_max-b)*100/_max; 
+}
+
+void output(int portion, int pin) {
+  digitalWrite(pin, HIGH);
+  unsigned long exe = ((unsigned long)portion)*base;
+  delay(exe);
+  digitalWrite(pin, LOW);
+  delay(1000);
+}
+
+void print_ISR() {
+  Serial.println("blink"); 
+  
+  if(data.length() >0) {
+     translate();
+     Serial.println("test cmyk");
+      for(int i = 0 ; i < 4 ; i++)
+      {
+        Serial.println(cmyk[i]);
+        //output(cmyk[i],motor[i]);
+      }
+     
+      for(int i = 0 ; i < 4 ; i++)
+      {
+        //Serial.println(cmyk[i]);
+        output(cmyk[i],motor[i]);
+      }
+      delay(1000);
+  } 
+  else {
+    delay(1000);
+  }
+}
+
 void loop()
 {
-
   switch(state) {
     case 0:
       if(Serial1.available())
@@ -74,10 +146,6 @@ void loop()
         state = 1;
         Serial.print(come);
       }
-
-      if(data.length() >0 && digitalRead(BUTTON) == HIGH) {
-        state = 2;
-      }
     break;
     
     case 1:
@@ -88,13 +156,6 @@ void loop()
       show();
       delay(200);
       state = 0;
-      break;
-
-    case 2:
-      //TODO pump and traslate RGB to CMYK
-      
-      
-      
       break;
   }
 }

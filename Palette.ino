@@ -7,24 +7,18 @@
 #define Y 6
 #define K 7
 
-
-
 #define printing 13
 
 
-const unsigned long base = 100000;
+const unsigned long base = 200000;
 
 String come = "";
 String data = "";
-int rgb[3] = {0, 0, 0};
 int cmyk[4] = {30, 30, 30, 30};
-
-
 
 int state;//状态机
 
 const int motor[4] = {C, M, Y, K};
-
 
 void setup()
 {
@@ -134,12 +128,4 @@ void loop()
       state = 0;
       break;
   }
-
-//    digitalWrite(4, HIGH);
-//    digitalWrite(5, HIGH);
-//    digitalWrite(6, HIGH);
-//    digitalWrite(7, HIGH);
-    
- 
-
 }
